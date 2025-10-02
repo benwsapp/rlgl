@@ -1,0 +1,43 @@
+version: "2"
+linters:
+  default: all
+  disable:
+    - exhaustruct
+    - gochecknoglobals
+    - gochecknoinits
+    - wsl
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+  settings:
+    depguard:
+      rules:
+        main:
+          allow:
+            - $gostd
+            - github.com/benwsapp/rlgl/cmd
+            - github.com/benwsapp/rlgl/pkg/embed
+            - github.com/benwsapp/rlgl/pkg/server
+            - github.com/spf13/cobra
+            - github.com/spf13/viper
+            - gopkg.in/yaml.v3
+formatters:
+  enable:
+    - gofumpt
+  settings:
+    gofumpt:
+      extra-rules: true
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
