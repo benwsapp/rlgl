@@ -82,70 +82,24 @@
         }
 
         .brand-mark {
-            width: clamp(3.1rem, 6vw, 3.6rem);
-            height: clamp(3.1rem, 6vw, 3.6rem);
-            position: relative;
-            display: grid;
-            place-items: center;
+            width: clamp(3.2rem, 6vw, 3.8rem);
+            aspect-ratio: 0.45;
+            display: inline-block;
         }
 
-        .lamp-base {
-            width: 65%;
-            height: 65%;
-            border-radius: 45% 45% 55% 55% / 50% 50% 45% 45%;
-            background: linear-gradient(160deg, hsl(var(--fg)) 0%, hsl(var(--fg)) 55%, hsla(var(--fg), 0.6) 100%);
-            border: 1px solid hsla(var(--border), 0.8);
-            box-shadow: inset 0 0 0 1px hsla(var(--border), 0.6);
-            position: relative;
-            transition: filter 0.25s ease, transform 0.2s ease;
+        .brand-mark svg {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
 
-        .lamp-base::before {
-            content: "";
-            position: absolute;
-            top: -18%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 55%;
-            height: 18%;
-            border-radius: 999px 999px 0 0;
-            background: linear-gradient(180deg, hsla(var(--fg), 0.85), hsla(var(--fg), 0.45));
-            border: 1px solid hsla(var(--border), 0.6);
+        .brand-mark .light {
+            opacity: 0.3;
+            transition: opacity 0.2s ease;
         }
 
-        .lamp-core {
-            position: absolute;
-            top: 18%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 48%;
-            height: 48%;
-            border-radius: 50%;
-            background: radial-gradient(circle at 40% 35%, hsla(var(--lamp-color), 0.92) 0%, hsla(var(--lamp-color), 0.55) 55%, hsla(var(--lamp-color), 0.2) 100%);
-            box-shadow: 0 0 24px hsla(var(--lamp-color), 0.25);
-            transition: box-shadow 0.25s ease, background 0.25s ease;
-        }
-
-        .lamp-handle {
-            position: absolute;
-            width: 75%;
-            height: 18%;
-            border-radius: 45% 45% 55% 55%;
-            border: 1px solid hsla(var(--border), 0.7);
-            bottom: -12%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(180deg, hsla(var(--fg), 0.65), hsla(var(--fg), 0.3));
-        }
-
-        .brand-mark:hover .lamp-base {
-            filter: drop-shadow(0 0 24px hsla(var(--lamp-color), 0.45));
-            transform: translateY(-1px);
-        }
-
-        .brand-mark:hover .lamp-core {
-            box-shadow: 0 0 36px hsla(var(--lamp-color), 0.45);
-            background: radial-gradient(circle at 40% 35%, hsla(var(--lamp-color), 1) 0%, hsla(var(--lamp-color), 0.65) 50%, hsla(var(--lamp-color), 0.1) 100%);
+        .brand-mark .light.active {
+            opacity: 1;
         }
 
         h1 {
@@ -429,6 +383,11 @@
             50% { opacity: 1; transform: scale(1.05); }
             100% { opacity: 0.75; transform: scale(0.98); }
         }
+
+        @keyframes lampPulse {
+            0%, 100% { transform: scale(0.98); }
+            50% { transform: scale(1.02); }
+        }
     </style>
 </head>
 <body>
@@ -437,10 +396,19 @@
             <div class="header-inner">
                 <div class="brand">
                     <div class="brand-mark" aria-hidden="true">
-                        <div class="lamp-base">
-                            <div class="lamp-core"></div>
-                            <div class="lamp-handle"></div>
-                        </div>
+                        <svg viewBox="0 0 60 150" role="presentation">
+                            <defs>
+                                <radialGradient id="lampGlow" cx="50%" cy="45%" r="60%">
+                                    <stop offset="0%" stop-color="hsla(var(--lamp-tone), 0.95)" />
+                                    <stop offset="55%" stop-color="hsla(var(--lamp-tone), 0.55)" />
+                                    <stop offset="100%" stop-color="hsla(var(--lamp-tone), 0.12)" />
+                                </radialGradient>
+                            </defs>
+                            <rect x="10" y="10" width="40" height="130" rx="8" fill="hsl(var(--fg))" />
+                            <circle cx="30" cy="40" r="15" fill="hsl(0 80% 45%)" class="light" id="light-red" />
+                            <circle cx="30" cy="75" r="15" fill="hsl(52 95% 45%)" class="light" id="light-yellow" />
+                            <circle cx="30" cy="110" r="15" fill="hsl(125 55% 42%)" class="light" id="light-green" />
+                        </svg>
                     </div>
                     <div>
                         <h1 id="site-title">{{.Name}}</h1>
@@ -509,6 +477,10 @@
         const siteDescription = document.getElementById('site-description');
         const tasksBody = document.getElementById('tasks-body');
         const footerCopy = document.getElementById('footer-copy');
+        const brandMark = document.querySelector('.brand-mark');
+        const lightRed = document.getElementById('light-red');
+        const lightYellow = document.getElementById('light-yellow');
+        const lightGreen = document.getElementById('light-green');
 
         function applyTheme(mode) {
             const theme = mode === 'dark' ? 'dark' : 'light';
@@ -594,6 +566,11 @@
             const isActive = !!contributor.active;
             statusLight.classList.toggle('active', isActive);
             statusLight.classList.toggle('idle', !isActive);
+
+            lightRed.classList.toggle('active', !isActive);
+            lightYellow.classList.toggle('active', false);
+            lightGreen.classList.toggle('active', isActive);
+
             statusLight.setAttribute('aria-label', isActive ? 'Green light' : 'Red light');
             focusTitle.textContent = contributor.focus || 'No active work logged';
             focusDesc.textContent = isActive ? '' : 'Not actively working on a dependency.';
