@@ -5,7 +5,7 @@
 A lightweight status dashboard for developers to showcase their current work-in-progress. Display what you're focusing on, your task queue, and availability status in real-time. Perfect for solo developers, remote teams, or anyone who wants a simple way to broadcast "what I'm working on right now."
 
 [![Go](https://img.shields.io/badge/go-1.25-00ADD8.svg?logo=go)](https://tip.golang.org/doc/go1.25)
-[![Go Report Card](https://goreportcard.com/badge/github.com/schnauzersoft/ami-util)](https://goreportcard.com/report/github.com/schnauzersoft/ami-util)
+[![Go Report Card](https://goreportcard.com/badge/github.com/benwsapp/rlgl)](https://goreportcard.com/report/github.com/benwsapp/rlgl)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
 [![Test Status](https://github.com/benwsapp/rlgl/actions/workflows/ci.yml/badge.svg)](https://github.com/benwsapp/rlgl/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/benwsapp/rlgl/graph/badge.svg?token=XDXHMQEK2L)](https://codecov.io/gh/benwsapp/rlgl)
