@@ -8,6 +8,7 @@ A lightweight status dashboard for developers to showcase their current work-in-
 [![Go Report Card](https://goreportcard.com/badge/github.com/schnauzersoft/ami-util)](https://goreportcard.com/report/github.com/schnauzersoft/ami-util)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
 [![Test Status](https://github.com/benwsapp/rlgl/actions/workflows/ci.yml/badge.svg)](https://github.com/benwsapp/rlgl/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/benwsapp/rlgl/graph/badge.svg?token=XDXHMQEK2L)](https://codecov.io/gh/benwsapp/rlgl)
 
 ## Features
 
