@@ -1,11 +1,13 @@
 # Ignore ALL
 *
 
-# Aloow config
+# Allow config
 !/.gitignore
 !/.github/**
 !.golangci.yml
+!/img/screenshot.png
 !cliff.toml
+!Dockerfile
 !build.sh
 !install.sh
 !cosign.pub
