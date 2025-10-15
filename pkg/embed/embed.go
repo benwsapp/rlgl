@@ -2,6 +2,7 @@ package embed
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"os"
 	"sync"
@@ -17,46 +18,53 @@ var (
 
 	compileOnce sync.Once
 	compiled    *template.Template
-	compileErr  error
+	errCompile  error
 )
 
 type Contributor struct {
-	Active bool     `yaml:"active" json:"active"`
-	Focus  string   `yaml:"focus" json:"focus"`
-	Queue  []string `yaml:"queue" json:"queue"`
+	Active bool     `json:"active" yaml:"active"`
+	Focus  string   `json:"focus"  yaml:"focus"`
+	Queue  []string `json:"queue"  yaml:"queue"`
 }
 
 type SiteConfig struct {
-	Name        string      `yaml:"name" json:"name"`
-	Description string      `yaml:"description" json:"description"`
-	User        string      `yaml:"user" json:"user"`
-	Contributor Contributor `yaml:"contributor" json:"contributor"`
+	Name        string      `json:"name"        yaml:"name"`
+	Description string      `json:"description" yaml:"description"`
+	User        string      `json:"user"        yaml:"user"`
+	Contributor Contributor `json:"contributor" yaml:"contributor"`
 }
 
-func getTemplate() (*template.Template, error) {
+// GetTemplate returns the compiled index template, using sync.Once for caching.
+func GetTemplate() (*template.Template, error) {
 	compileOnce.Do(func() {
-		compiled, compileErr = template.New("index").Parse(indexTemplateSource)
+		compiled, errCompile = template.New("index").Parse(indexTemplateSource)
 	})
 
-	return compiled, compileErr
+	if errCompile != nil {
+		return nil, fmt.Errorf("failed to compile template: %w", errCompile)
+	}
+
+	return compiled, nil
 }
 
 func LoadSiteConfig(path string) (SiteConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return SiteConfig{}, err
+		return SiteConfig{}, fmt.Errorf("failed to read config file: %w", err)
 	}
 
 	var cfg SiteConfig
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return SiteConfig{}, err
+
+	err = yaml.Unmarshal(data, &cfg)
+	if err != nil {
+		return SiteConfig{}, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
 	return cfg, nil
 }
 
 func Index(configPath string) ([]byte, error) {
-	tmpl, err := getTemplate()
+	tmpl, err := GetTemplate()
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +75,10 @@ func Index(configPath string) ([]byte, error) {
 	}
 
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, cfg); err != nil {
-		return nil, err
+
+	err = tmpl.Execute(&buf, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
 
 	return buf.Bytes(), nil

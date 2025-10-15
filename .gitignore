@@ -1,10 +1,11 @@
 # Ignore ALL
 *
 
-# Aloow config
+# Allow config
 !/.gitignore
 !/.github/**
 !.golangci.yml
+!/img/screenshot.png
 !cliff.toml
 !build.sh
 !install.sh

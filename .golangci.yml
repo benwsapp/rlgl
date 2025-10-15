@@ -2,10 +2,10 @@ version: "2"
 linters:
   default: all
   disable:
+    - wsl
     - exhaustruct
     - gochecknoglobals
     - gochecknoinits
-    - wsl
   exclusions:
     generated: lax
     presets:
