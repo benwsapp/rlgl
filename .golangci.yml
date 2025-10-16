@@ -26,6 +26,9 @@ linters:
             - github.com/benwsapp/rlgl/cmd
             - github.com/benwsapp/rlgl/pkg/embed
             - github.com/benwsapp/rlgl/pkg/server
+            - github.com/benwsapp/rlgl/pkg/wsclient
+            - github.com/benwsapp/rlgl/pkg/wsserver
+            - github.com/gorilla/websocket
             - github.com/spf13/cobra
             - github.com/spf13/viper
             - gopkg.in/yaml.v3
