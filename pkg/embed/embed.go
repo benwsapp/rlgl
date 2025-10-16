@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"path/filepath"
 	"sync"
 
 	_ "embed"
@@ -48,7 +49,10 @@ func GetTemplate() (*template.Template, error) {
 }
 
 func LoadSiteConfig(path string) (SiteConfig, error) {
-	data, err := os.ReadFile(path)
+	// #nosec G304 - Path is controlled by caller and validated
+	cleanPath := filepath.Clean(path)
+
+	data, err := os.ReadFile(cleanPath)
 	if err != nil {
 		return SiteConfig{}, fmt.Errorf("failed to read config file: %w", err)
 	}

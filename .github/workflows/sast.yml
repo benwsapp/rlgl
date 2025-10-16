@@ -28,7 +28,7 @@ jobs:
     - name: Run gosec
       uses: securego/gosec@master
       with:
-        args: '-no-fail ./...'
+        args: './...'
 
     - name: Run govulncheck
       run: |
