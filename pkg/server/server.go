@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/benwsapp/rlgl/pkg/embed"
+	"github.com/benwsapp/rlgl/pkg/wsserver"
 )
 
 func IndexHandler(configPath string) http.HandlerFunc {
@@ -119,11 +120,23 @@ func SendEventData(responseWriter http.ResponseWriter, flusher http.Flusher, con
 	return nil
 }
 
-func Run(addr, configPath string, trustedOrigins []string) error {
+func Run(addr string, store *wsserver.Store, trustedOrigins []string) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", IndexHandler(configPath))
-	mux.HandleFunc("/config", ConfigHandler(configPath))
-	mux.HandleFunc("/events", EventsHandler(configPath))
+
+	// WebSocket endpoints for client push
+	mux.HandleFunc("/ws", wsserver.Handler(store))
+
+	// Status endpoint showing all stored configs
+	mux.HandleFunc("/status", wsserver.StatusHandler(store))
+
+	// HTML index page (uses first available config or shows all)
+	mux.HandleFunc("/", IndexHandlerWithStore(store))
+
+	// JSON config endpoints
+	mux.HandleFunc("/config", ConfigHandlerWithStore(store))
+
+	// SSE events endpoint
+	mux.HandleFunc("/events", EventsHandlerWithStore(store))
 
 	const (
 		readHeaderTimeout = 5 * time.Second
@@ -149,4 +162,162 @@ func Run(addr, configPath string, trustedOrigins []string) error {
 	}
 
 	return nil
+}
+
+func IndexHandlerWithStore(store *wsserver.Store) http.HandlerFunc {
+	return func(responseWriter http.ResponseWriter, req *http.Request) {
+		slog.Info("request received", "method", req.Method, "path", req.URL.Path, "remote_addr", req.RemoteAddr)
+
+		configs := store.GetAll()
+		if len(configs) == 0 {
+			http.Error(responseWriter, "no configs available", http.StatusNotFound)
+
+			return
+		}
+
+		// Use the first config for rendering
+		var cfg embed.SiteConfig
+		for _, c := range configs {
+			cfg = c
+
+			break
+		}
+
+		content, err := renderIndex(cfg)
+		if err != nil {
+			slog.Error("failed rendering template", "error", err)
+			http.Error(responseWriter, "internal server error", http.StatusInternalServerError)
+
+			return
+		}
+
+		_, writeErr := responseWriter.Write(content)
+		if writeErr != nil {
+			slog.Error("failed writing response", "error", writeErr)
+		}
+	}
+}
+
+func ConfigHandlerWithStore(store *wsserver.Store) http.HandlerFunc {
+	return func(responseWriter http.ResponseWriter, _ *http.Request) {
+		configs := store.GetAll()
+		if len(configs) == 0 {
+			http.Error(responseWriter, "no configs available", http.StatusNotFound)
+
+			return
+		}
+
+		// Return the first config
+		var cfg embed.SiteConfig
+		for _, c := range configs {
+			cfg = c
+
+			break
+		}
+
+		responseWriter.Header().Set("Content-Type", "application/json")
+		responseWriter.Header().Set("Cache-Control", "no-store")
+
+		err := json.NewEncoder(responseWriter).Encode(cfg)
+		if err != nil {
+			slog.Error("failed encoding config", "error", err)
+		}
+	}
+}
+
+func EventsHandlerWithStore(store *wsserver.Store) http.HandlerFunc {
+	return func(responseWriter http.ResponseWriter, req *http.Request) {
+		flusher, ok := responseWriter.(http.Flusher)
+		if !ok {
+			http.Error(responseWriter, "streaming unsupported", http.StatusInternalServerError)
+
+			return
+		}
+
+		SetupSSEHeaders(responseWriter)
+		StreamEventsFromStore(req.Context(), responseWriter, flusher, store)
+	}
+}
+
+func StreamEventsFromStore(
+	ctx context.Context,
+	responseWriter http.ResponseWriter,
+	flusher http.Flusher,
+	store *wsserver.Store,
+) {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			err := SendEventDataFromStore(responseWriter, flusher, store)
+			if err != nil {
+				return
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func SendEventDataFromStore(responseWriter http.ResponseWriter, flusher http.Flusher, store *wsserver.Store) error {
+	configs := store.GetAll()
+	if len(configs) == 0 {
+		return nil
+	}
+
+	// Send the first config
+	var cfg embed.SiteConfig
+	for _, c := range configs {
+		cfg = c
+
+		break
+	}
+
+	payload, err := json.Marshal(cfg)
+	if err != nil {
+		slog.Error("failed marshaling event payload", "error", err)
+
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	_, writeErr := responseWriter.Write([]byte("data: " + string(payload) + "\n\n"))
+	if writeErr != nil {
+		slog.Error("failed writing event payload", "error", writeErr)
+
+		return fmt.Errorf("failed to write event: %w", writeErr)
+	}
+
+	flusher.Flush()
+
+	return nil
+}
+
+func renderIndex(cfg embed.SiteConfig) ([]byte, error) {
+	tmpl, err := embed.GetTemplate()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get template: %w", err)
+	}
+
+	var buf []byte
+
+	w := &bytesWriter{buf: &buf}
+
+	err = tmpl.Execute(w, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return buf, nil
+}
+
+type bytesWriter struct {
+	buf *[]byte
+}
+
+func (bw *bytesWriter) Write(p []byte) (int, error) {
+	*bw.buf = append(*bw.buf, p...)
+
+	return len(p), nil
 }

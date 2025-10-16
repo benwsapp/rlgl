@@ -4,6 +4,10 @@
 
 A lightweight status dashboard for developers to showcase their current work-in-progress. Display what you're focusing on, your task queue, and availability status in real-time. Perfect for solo developers, remote teams, or anyone who wants a simple way to broadcast "what I'm working on right now."
 
+**rlgl** runs in two modes:
+- **Server Mode**: Hosts the dashboard web interface and receives status updates via WebSocket
+- **Client Mode**: Reads your local YAML config and pushes updates to the server
+
 [![Go](https://img.shields.io/badge/go-1.25-00ADD8.svg?logo=go)](https://tip.golang.org/doc/go1.25)
 [![Go Report Card](https://goreportcard.com/badge/github.com/benwsapp/rlgl)](https://goreportcard.com/report/github.com/benwsapp/rlgl)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
@@ -12,10 +16,13 @@ A lightweight status dashboard for developers to showcase their current work-in-
 
 ## Features
 
-- **Real-time Updates**: Server-Sent Events (SSE) stream config changes instantly
+- **Client/Server Architecture**: Run a central server and push updates from multiple clients
+- **WebSocket Communication**: Clients push config updates to the server via WebSocket
+- **Real-time Updates**: Server-Sent Events (SSE) stream config changes instantly to web viewers
 - **Simple Configuration**: Single YAML file to manage your work status
 - **Focus Indicator**: Show what you're currently working on
 - **Task Queue**: Display your upcoming tasks
+- **In-Memory Storage**: Server stores client configs in memory (no database required)
 
 ## Prerequisites
 
@@ -92,65 +99,102 @@ $ docker buildx build \
 
 ## Running
 
-### Local Binary
+### Server Mode
+
+Run the server to host the dashboard and receive updates from clients:
 
 ```bash
-# Run with default config path
-$ ./rlgl run
+# Run server with defaults (listens on :8080)
+$ ./rlgl serve
 
-# Specify custom config and address
-$ ./rlgl run --config /path/to/site.yaml --addr :3000
+# Specify custom address
+$ ./rlgl serve --addr :3000
 
 # With trusted origins for CSRF (comma-separated)
-$ ./rlgl run --trusted-origins https://example.com,https://app.example.com
+$ ./rlgl serve --trusted-origins https://example.com,https://app.example.com
 
 # Using environment variables
-$ export RLGL_ADDR=":3000"
-$ export RLGL_CONFIG="config/site.yaml"
+$ export RLGL_SERVER_ADDR=":3000"
 $ export RLGL_TRUSTED_ORIGINS="https://example.com,https://app.example.com"
-$ ./rlgl run
+$ ./rlgl serve
+```
+
+### Client Mode
+
+Run the client to push your local config to the server:
+
+```bash
+# Push config continuously (every 30s by default)
+$ ./rlgl client --client-id my-laptop --config config/site.yaml --server ws://localhost:8080/ws
+
+# Push config once and exit
+$ ./rlgl client --client-id my-laptop --config config/site.yaml --server ws://localhost:8080/ws --once
+
+# Custom push interval
+$ ./rlgl client --client-id my-laptop --config config/site.yaml --server ws://localhost:8080/ws --interval 1m
+
+# Using environment variables
+$ export RLGL_REMOTE_HOST="ws://localhost:8080/ws"
+$ export RLGL_CLIENT_ID="my-laptop"
+$ export RLGL_CLIENT_INTERVAL="1m"
+$ ./rlgl client --config config/site.yaml
 ```
 
 ### Environment Variables
 
-All flags can be set via environment variables:
-- `RLGL_ADDR` - Server address (default: `:8080`)
-- `RLGL_CONFIG` - Path to config file (default: `site.yaml` in current dir or `config/`)
+**Server:**
+- `RLGL_SERVER_ADDR` - Server address (default: `:8080`)
 - `RLGL_TRUSTED_ORIGINS` - Comma-separated list of trusted origins for CSRF protection
+
+**Client:**
+- `RLGL_REMOTE_HOST` - WebSocket server URL (default: `ws://localhost:8080/ws`)
+- `RLGL_CLIENT_ID` - Unique client identifier (required)
+- `RLGL_CLIENT_INTERVAL` - Interval between config pushes (default: `30s`)
+- `RLGL_CLIENT_ONCE` - Push config once and exit (default: `false`)
 
 ### Docker
 
-#### Basic Run
+#### Run Server
 
 ```bash
 $ docker run -p 8080:8080 \
+    rlgl:latest serve --addr :8080
+```
+
+#### Run Client
+
+```bash
+$ docker run \
     -v $(pwd)/config/site.yaml:/config/site.yaml:ro \
-    rlgl:latest run --config /config/site.yaml
+    rlgl:latest client --client-id docker-client --config /config/site.yaml --server ws://host.docker.internal:8080/ws
 ```
 
 #### With Environment Variables
 
 ```bash
+# Server
 $ docker run -p 8080:8080 \
-    -v $(pwd)/config:/config:ro \
-    -e RLGL_CONFIG=/config/site.yaml \
     -e RLGL_TRUSTED_ORIGINS="https://example.com,https://app.example.com" \
-    rlgl:latest run
-```
+    rlgl:latest serve
 
-#### Mount Entire Config Directory
-
-```bash
-$ docker run -p 8080:8080 \
+# Client
+$ docker run \
     -v $(pwd)/config:/config:ro \
-    rlgl:latest run --config /config/site.yaml
+    -e RLGL_REMOTE_HOST="ws://host.docker.internal:8080/ws" \
+    -e RLGL_CLIENT_ID="docker-client" \
+    rlgl:latest client --config /config/site.yaml
 ```
 
 ## Endpoints
 
-- `GET /` - Main page (renders template with config)
-- `GET /config` - JSON endpoint returning current config
+**Web Interface:**
+- `GET /` - Main page (renders template with first available client config)
+- `GET /config` - JSON endpoint returning first available client config
 - `GET /events` - Server-Sent Events stream for real-time config updates
+
+**WebSocket API:**
+- `WS /ws` - WebSocket endpoint for client connections (push config, ping/pong)
+- `GET /status` - JSON endpoint returning all client configs (keyed by client ID)
 
 ## Development
 
