@@ -20,13 +20,13 @@ var (
 // RootCmd is the root command for rlgl.
 var RootCmd = &cobra.Command{
 	Use:   "rlgl",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Short: "Current work-in-progress status dashboard",
+	Long: `Status dashboard that shows what's currently
+in progress as well as what upcoming items are in the user's
+personal backlog.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+rlgl reads from a local config file and syncs the status to a
+remote web page.`,
 }
 
 func Execute() {
