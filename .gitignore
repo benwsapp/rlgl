@@ -7,7 +7,7 @@
 !.golangci.yml
 !/img/screenshot.png
 !cliff.toml
-!covecov.yml
+!codecov.yml
 !Dockerfile
 !build.sh
 !install.sh
