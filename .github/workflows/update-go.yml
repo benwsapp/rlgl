@@ -1,0 +1,58 @@
+name: Update Go 1.25
+on:
+  schedule:
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-go-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Current Go Version
+        id: current
+        run: |
+          echo "version=$(grep '^go ' go.mod | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Latest Go Minor Version
+        id: latest
+        run: |
+          CURRENT="${{ steps.current.outputs.version }}"
+          MAJOR_MINOR=$(echo $CURRENT | cut -d. -f1-2)
+          LATEST=$(curl -s "https://go.dev/dl/?mode=json" | \
+            jq -r "[.[] | select(.version | startswith(\"go${MAJOR_MINOR}\")) | .version] | .[0]" | \
+            sed 's/go//')
+          echo "version=$LATEST" >> $GITHUB_OUTPUT
+
+      - name: Update Go Version
+        id: update
+        run: |
+          CURRENT="${{ steps.current.outputs.version }}"
+          LATEST="${{ steps.latest.outputs.version }}"
+
+          if [ "$CURRENT" != "$LATEST" ]; then
+            go mod edit -go=$LATEST
+            go mod tidy
+            sed -i "s/golang:[0-9.]*-alpine/golang:${LATEST}-alpine/" Dockerfile
+            echo "updated=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.update.outputs.updated == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update Go to ${{ steps.latest.outputs.version }}"
+          branch: update-go-${{ steps.latest.outputs.version }}
+          title: "chore: update Go to ${{ steps.latest.outputs.version }}"
+          body: |
+            Updates Go to the latest minor version: ${{ steps.latest.outputs.version }}
+
+            - Updated go.mod
+            - Updated Dockerfile
+            - Ran go mod tidy
