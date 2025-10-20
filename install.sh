@@ -109,7 +109,6 @@ detect_platform() {
     case "$(uname -s)" in
         Linux*)     os="linux" ;;
         Darwin*)    os="darwin" ;;
-        CYGWIN*|MINGW*|MSYS*) os="windows" ;;
         *)
             log_error "Unsupported operating system: $(uname -s)"
             exit 1
@@ -125,7 +124,7 @@ detect_platform() {
             ;;
     esac
 
-    echo "${os}_${arch}"
+    echo "${os}-${arch}"
 }
 
 get_latest_version() {
@@ -143,7 +142,7 @@ get_latest_version() {
 check_existing_installation() {
     if command -v rlgl &> /dev/null; then
         local current_version
-        current_version=$(rlgl version 2>/dev/null || echo "unknown")
+        current_version=$(rlgl serve --version 2>/dev/null | head -1 || echo "unknown")
 
         if [ "$FORCE_INSTALL" = false ]; then
             log_warning "rlgl is already installed (version: ${current_version})"
@@ -161,7 +160,8 @@ install_rlgl() {
     local platform
     local version
     local download_url
-    local binary_name="rlgl"
+    local archive_name
+    local temp_dir
 
     platform=$(detect_platform)
 
@@ -173,35 +173,55 @@ install_rlgl() {
         log_info "Installing version: ${version}"
     fi
 
-    if [[ "$platform" == *"windows"* ]]; then
-        binary_name="rlgl.exe"
-    fi
-
-    download_url="https://github.com/${GITHUB_REPO}/releases/download/${version}/rlgl_${platform}"
+    archive_name="rlgl-${version}-${platform}.tar.gz"
+    download_url="https://github.com/${GITHUB_REPO}/releases/download/${version}/${archive_name}"
 
     log_info "Downloading from: ${download_url}"
 
-    mkdir -p "$INSTALL_DIR"
+    # Create temporary directory
+    temp_dir=$(mktemp -d)
+    trap 'rm -rf "$temp_dir"' EXIT
 
+    # Download archive
     if command -v curl &> /dev/null; then
-        curl -sSL -o "${INSTALL_DIR}/${binary_name}" "$download_url"
+        if ! curl -sSL -f -o "${temp_dir}/${archive_name}" "$download_url"; then
+            log_error "Failed to download rlgl. Check if version ${version} exists."
+            exit 1
+        fi
     elif command -v wget &> /dev/null; then
-        wget -q -O "${INSTALL_DIR}/${binary_name}" "$download_url"
+        if ! wget -q -O "${temp_dir}/${archive_name}" "$download_url"; then
+            log_error "Failed to download rlgl. Check if version ${version} exists."
+            exit 1
+        fi
     else
         log_error "curl or wget is required to download rlgl"
         exit 1
     fi
 
-    chmod +x "${INSTALL_DIR}/${binary_name}"
+    # Extract archive
+    log_info "Extracting archive..."
+    if ! tar -xzf "${temp_dir}/${archive_name}" -C "$temp_dir"; then
+        log_error "Failed to extract archive"
+        exit 1
+    fi
 
-    log_success "rlgl installed to ${INSTALL_DIR}/${binary_name}"
+    # Install binary
+    mkdir -p "$INSTALL_DIR"
 
-    if "${INSTALL_DIR}/${binary_name}" version &> /dev/null; then
-        local installed_version
-        installed_version=$("${INSTALL_DIR}/${binary_name}" version 2>/dev/null || echo "unknown")
-        log_success "Installation verified (version: ${installed_version})"
+    if [ -f "${temp_dir}/rlgl" ]; then
+        mv "${temp_dir}/rlgl" "${INSTALL_DIR}/rlgl"
+        chmod +x "${INSTALL_DIR}/rlgl"
+        log_success "rlgl installed to ${INSTALL_DIR}/rlgl"
     else
-        log_warning "Binary installed but version check failed"
+        log_error "Binary not found in archive"
+        exit 1
+    fi
+
+    # Verify installation
+    if "${INSTALL_DIR}/rlgl" serve --help &> /dev/null; then
+        log_success "Installation verified"
+    else
+        log_warning "Binary installed but verification failed"
     fi
 }
 
