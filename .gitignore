@@ -5,13 +5,11 @@
 !/.gitignore
 !/.github/**
 !.golangci.yml
-!/img/screenshot.png
 !cliff.toml
 !codecov.yml
 !Dockerfile
 !build.sh
 !install.sh
-!cosign.pub
 
 # Allow Go
 !*.go
@@ -19,6 +17,9 @@
 !go.mod
 
 # Allow deez
+!/img/*.png
+!cliff.toml
+!/docs/**
 !README.md
 !LICENSE
 
