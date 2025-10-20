@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/benwsapp/rlgl/pkg/embed"
+	"github.com/benwsapp/rlgl/pkg/slack"
 	"github.com/gorilla/websocket"
 )
 
@@ -43,6 +44,44 @@ func (s *Store) Set(clientID string, config embed.SiteConfig) {
 
 	s.configs[clientID] = config
 	slog.Info("stored config", "client_id", clientID, "name", config.Name)
+
+	if config.Slack.Enabled && config.Slack.UserToken != "" {
+		go syncToSlack(config)
+	}
+}
+
+func syncToSlack(config embed.SiteConfig) {
+	client := slack.NewClient(config.Slack.UserToken)
+
+	var statusText string
+
+	var statusEmoji string
+
+	if config.Contributor.Active {
+		statusEmoji = config.Slack.StatusEmojiActive
+		if statusEmoji == "" {
+			statusEmoji = ":large_green_circle:"
+		}
+
+		statusText = config.Contributor.Focus
+	} else {
+		statusEmoji = config.Slack.StatusEmojiInactive
+		if statusEmoji == "" {
+			statusEmoji = ":red_circle:"
+		}
+
+		statusText = config.Contributor.Focus
+		if statusText == "" {
+			statusText = "Busy"
+		}
+	}
+
+	err := client.SetStatus(statusText, statusEmoji)
+	if err != nil {
+		slog.Error("failed to sync status to Slack", "error", err, "user", config.User)
+	} else {
+		slog.Info("synced status to Slack", "user", config.User, "status", statusText, "emoji", statusEmoji)
+	}
 }
 
 func (s *Store) Get(clientID string) (embed.SiteConfig, bool) {
