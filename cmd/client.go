@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -9,6 +10,11 @@ import (
 	"github.com/benwsapp/rlgl/pkg/wsclient"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+)
+
+var (
+	ErrTokenRequired    = errors.New("token is required: use --token flag or RLGL_TOKEN env var")
+	ErrClientIDRequired = errors.New("client-id is required: use --client-id flag or RLGL_CLIENT_ID env var")
 )
 
 func InitConfig(cmd *cobra.Command) (string, error) {
@@ -40,24 +46,24 @@ var clientCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
 
-		serverURL, err := cmd.Flags().GetString("server")
-		if err != nil {
-			return fmt.Errorf("failed to get server flag: %w", err)
+		_ = viper.BindPFlag("server", cmd.Flags().Lookup("server"))
+		_ = viper.BindPFlag("client-id", cmd.Flags().Lookup("client-id"))
+		_ = viper.BindPFlag("interval", cmd.Flags().Lookup("interval"))
+		_ = viper.BindPFlag("once", cmd.Flags().Lookup("once"))
+		_ = viper.BindPFlag("token", cmd.Flags().Lookup("token"))
+
+		serverURL := viper.GetString("server")
+		clientID := viper.GetString("client-id")
+		interval := viper.GetDuration("interval")
+		once := viper.GetBool("once")
+		token := viper.GetString("token")
+
+		if clientID == "" {
+			return ErrClientIDRequired
 		}
 
-		clientID, err := cmd.Flags().GetString("client-id")
-		if err != nil {
-			return fmt.Errorf("failed to get client-id flag: %w", err)
-		}
-
-		interval, err := cmd.Flags().GetDuration("interval")
-		if err != nil {
-			return fmt.Errorf("failed to get interval flag: %w", err)
-		}
-
-		once, err := cmd.Flags().GetBool("once")
-		if err != nil {
-			return fmt.Errorf("failed to get once flag: %w", err)
+		if token == "" {
+			return ErrTokenRequired
 		}
 
 		configPath, err := InitConfig(cmd)
@@ -75,10 +81,10 @@ var clientCmd = &cobra.Command{
 		)
 
 		if once {
-			return wsclient.RunOnce(serverURL, configPath, clientID)
+			return wsclient.RunOnce(serverURL, configPath, clientID, token)
 		}
 
-		return wsclient.Run(serverURL, configPath, clientID, interval)
+		return wsclient.Run(serverURL, configPath, clientID, token, interval)
 	},
 }
 
@@ -90,18 +96,13 @@ func init() {
 	clientCmd.Flags().Duration("interval", defaultInterval, "interval between config pushes")
 	clientCmd.Flags().Bool("once", false, "push config once and exit")
 	clientCmd.Flags().String("config", "", "path to site configuration file (defaults to rlgl.yaml)")
-
-	_ = clientCmd.MarkFlagRequired("client-id")
+	clientCmd.Flags().String("token", "", "authentication token (required)")
 
 	_ = viper.BindEnv("server", "RLGL_REMOTE_HOST")
 	_ = viper.BindEnv("client-id", "RLGL_CLIENT_ID")
 	_ = viper.BindEnv("interval", "RLGL_CLIENT_INTERVAL")
 	_ = viper.BindEnv("once", "RLGL_CLIENT_ONCE")
-
-	_ = viper.BindPFlag("server", clientCmd.Flags().Lookup("server"))
-	_ = viper.BindPFlag("client-id", clientCmd.Flags().Lookup("client-id"))
-	_ = viper.BindPFlag("interval", clientCmd.Flags().Lookup("interval"))
-	_ = viper.BindPFlag("once", clientCmd.Flags().Lookup("once"))
+	_ = viper.BindEnv("token", "RLGL_TOKEN")
 
 	RootCmd.AddCommand(clientCmd)
 }

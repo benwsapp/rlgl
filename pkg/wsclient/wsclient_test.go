@@ -44,7 +44,7 @@ contributor:
 func TestNewClient(t *testing.T) {
 	t.Parallel()
 
-	client := wsclient.NewClient("ws://localhost:8080/ws", "test-client")
+	client := wsclient.NewClient("ws://localhost:8080/ws", "test-client", "test-token")
 	if client == nil {
 		t.Fatal("NewClient returned nil")
 	}
@@ -72,7 +72,7 @@ func TestClientConnectAndClose(t *testing.T) {
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
 
-	client := wsclient.NewClient(wsURL, "test-client")
+	client := wsclient.NewClient(wsURL, "test-client", "test-token")
 
 	err := client.Connect()
 	if err != nil {
@@ -126,7 +126,7 @@ func TestClientPushConfig(t *testing.T) {
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
 
-	client := wsclient.NewClient(wsURL, "test-client")
+	client := wsclient.NewClient(wsURL, "test-client", "test-token")
 
 	err := client.Connect()
 	if err != nil {
@@ -149,7 +149,7 @@ func TestClientPushConfig(t *testing.T) {
 func TestClientPushConfigNotConnected(t *testing.T) {
 	t.Parallel()
 
-	client := wsclient.NewClient("ws://localhost:8080/ws", "test-client")
+	client := wsclient.NewClient("ws://localhost:8080/ws", "test-client", "test-token")
 
 	config := embed.SiteConfig{
 		Name: "Test Site",
@@ -202,7 +202,7 @@ func TestClientPing(t *testing.T) {
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
 
-	client := wsclient.NewClient(wsURL, "test-client")
+	client := wsclient.NewClient(wsURL, "test-client", "test-token")
 
 	err := client.Connect()
 	if err != nil {
@@ -256,7 +256,7 @@ func TestGetStatusJSON(t *testing.T) {
 func TestClientCloseNilConnection(t *testing.T) {
 	t.Parallel()
 
-	client := wsclient.NewClient("ws://localhost:8080/ws", "test-client")
+	client := wsclient.NewClient("ws://localhost:8080/ws", "test-client", "test-token")
 
 	err := client.Close()
 	if err != nil {
@@ -303,7 +303,7 @@ func TestRunOnce(t *testing.T) {
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
 
-	err := wsclient.RunOnce(wsURL, configPath, "test-client")
+	err := wsclient.RunOnce(wsURL, configPath, "test-client", "test-token")
 	if err != nil {
 		t.Fatalf("RunOnce failed: %v", err)
 	}
@@ -331,7 +331,7 @@ func TestRunOnceInvalidConfig(t *testing.T) {
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
 
-	err := wsclient.RunOnce(wsURL, "/nonexistent/config.yaml", "test-client")
+	err := wsclient.RunOnce(wsURL, "/nonexistent/config.yaml", "test-client", "test-token")
 	if err == nil {
 		t.Fatal("expected error for invalid config path")
 	}
@@ -342,7 +342,7 @@ func TestRunOnceConnectError(t *testing.T) {
 
 	configPath := createTestConfig(t)
 
-	err := wsclient.RunOnce("ws://localhost:9999/ws", configPath, "test-client")
+	err := wsclient.RunOnce("ws://localhost:9999/ws", configPath, "test-client", "test-token")
 	if err == nil {
 		t.Fatal("expected connection error")
 	}
@@ -386,7 +386,7 @@ func TestClientPushConfigServerError(t *testing.T) {
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
 
-	client := wsclient.NewClient(wsURL, "test-client")
+	client := wsclient.NewClient(wsURL, "test-client", "test-token")
 
 	err := client.Connect()
 	if err != nil {
@@ -446,7 +446,7 @@ func TestClientPushConfigUnexpectedMessageType(t *testing.T) {
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
 
-	client := wsclient.NewClient(wsURL, "test-client")
+	client := wsclient.NewClient(wsURL, "test-client", "test-token")
 
 	err := client.Connect()
 	if err != nil {
@@ -472,7 +472,7 @@ func TestClientPushConfigUnexpectedMessageType(t *testing.T) {
 func TestClientPingNotConnected(t *testing.T) {
 	t.Parallel()
 
-	client := wsclient.NewClient("ws://localhost:8080/ws", "test-client")
+	client := wsclient.NewClient("ws://localhost:8080/ws", "test-client", "test-token")
 
 	err := client.Ping()
 	if !errors.Is(err, wsclient.ErrNotConnected) {
@@ -517,7 +517,7 @@ func TestClientPingUnexpectedResponse(t *testing.T) {
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
 
-	client := wsclient.NewClient(wsURL, "test-client")
+	client := wsclient.NewClient(wsURL, "test-client", "test-token")
 
 	err := client.Connect()
 	if err != nil {
@@ -558,7 +558,7 @@ func TestRunConnectError(t *testing.T) {
 
 	configPath := createTestConfig(t)
 
-	err := wsclient.Run("ws://localhost:9999/ws", configPath, "test-client", 1*time.Second)
+	err := wsclient.Run("ws://localhost:9999/ws", configPath, "test-client", "test-token", 1*time.Second)
 	if err == nil {
 		t.Fatal("expected connection error")
 	}
@@ -586,7 +586,7 @@ func TestRunInitialPushError(t *testing.T) {
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
 
-	err := wsclient.Run(wsURL, "/nonexistent/config.yaml", "test-client", 1*time.Second)
+	err := wsclient.Run(wsURL, "/nonexistent/config.yaml", "test-client", "test-token", 1*time.Second)
 	if err == nil {
 		t.Fatal("expected error for invalid config")
 	}

@@ -12,6 +12,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const testToken = "test-token-12345"
+
 func TestNewStore(t *testing.T) {
 	t.Parallel()
 
@@ -87,12 +89,12 @@ func TestHandlerWebSocket(t *testing.T) {
 
 	store := wsserver.NewStore()
 
-	server := httptest.NewServer(wsserver.Handler(store))
+	server := httptest.NewServer(wsserver.Handler(store, testToken))
 	defer server.Close()
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
 
-	conn := dialWebSocket(t, wsURL)
+	conn := dialWebSocket(t, wsURL, testToken)
 	defer conn.Close()
 
 	config := embed.SiteConfig{
@@ -137,12 +139,15 @@ func TestHandlerWebSocket(t *testing.T) {
 	}
 }
 
-func dialWebSocket(t *testing.T, wsURL string) *websocket.Conn {
+func dialWebSocket(t *testing.T, wsURL, token string) *websocket.Conn {
 	t.Helper()
 
 	dialer := websocket.DefaultDialer
 
-	conn, resp, err := dialer.Dial(wsURL, nil)
+	headers := http.Header{}
+	headers.Add("Authorization", "Bearer "+token)
+
+	conn, resp, err := dialer.Dial(wsURL, headers)
 	if err != nil {
 		t.Fatalf("failed to connect: %v", err)
 	}
@@ -159,14 +164,17 @@ func TestHandlerPing(t *testing.T) {
 
 	store := wsserver.NewStore()
 
-	server := httptest.NewServer(wsserver.Handler(store))
+	server := httptest.NewServer(wsserver.Handler(store, testToken))
 	defer server.Close()
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
 
 	dialer := websocket.DefaultDialer
 
-	conn, resp, err := dialer.Dial(wsURL, nil)
+	headers := http.Header{}
+	headers.Add("Authorization", "Bearer "+testToken)
+
+	conn, resp, err := dialer.Dial(wsURL, headers)
 	if err != nil {
 		t.Fatalf("failed to connect: %v", err)
 	}
@@ -204,14 +212,17 @@ func TestHandlerUnknownMessageType(t *testing.T) {
 
 	store := wsserver.NewStore()
 
-	server := httptest.NewServer(wsserver.Handler(store))
+	server := httptest.NewServer(wsserver.Handler(store, testToken))
 	defer server.Close()
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
 
 	dialer := websocket.DefaultDialer
 
-	conn, resp, err := dialer.Dial(wsURL, nil)
+	headers := http.Header{}
+	headers.Add("Authorization", "Bearer "+testToken)
+
+	conn, resp, err := dialer.Dial(wsURL, headers)
 	if err != nil {
 		t.Fatalf("failed to connect: %v", err)
 	}
@@ -310,14 +321,17 @@ func TestHandleMessagePush(t *testing.T) {
 
 	store := wsserver.NewStore()
 
-	server := httptest.NewServer(wsserver.Handler(store))
+	server := httptest.NewServer(wsserver.Handler(store, testToken))
 	defer server.Close()
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
 
 	dialer := websocket.DefaultDialer
 
-	conn, resp, err := dialer.Dial(wsURL, nil)
+	headers := http.Header{}
+	headers.Add("Authorization", "Bearer "+testToken)
+
+	conn, resp, err := dialer.Dial(wsURL, headers)
 	if err != nil {
 		t.Fatalf("failed to connect: %v", err)
 	}
@@ -583,5 +597,125 @@ func TestStoreSetWithSlackEnabledDefaultEmojis(t *testing.T) {
 
 	if retrieved.Slack.StatusEmojiActive != "" {
 		t.Errorf("expected empty active emoji, got %s", retrieved.Slack.StatusEmojiActive)
+	}
+}
+
+func TestHandlerMissingToken(t *testing.T) {
+	t.Parallel()
+
+	store := wsserver.NewStore()
+
+	server := httptest.NewServer(wsserver.Handler(store, testToken))
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
+
+	dialer := websocket.DefaultDialer
+
+	_, resp, err := dialer.Dial(wsURL, nil)
+	if err == nil {
+		t.Fatal("expected connection to fail without token")
+	}
+
+	if resp != nil {
+		if resp.StatusCode != http.StatusUnauthorized {
+			t.Errorf("expected status 401, got %d", resp.StatusCode)
+		}
+
+		_ = resp.Body.Close()
+	}
+}
+
+func TestHandlerInvalidToken(t *testing.T) {
+	t.Parallel()
+
+	store := wsserver.NewStore()
+	testToken := "correct-token-12345"
+
+	server := httptest.NewServer(wsserver.Handler(store, testToken))
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
+
+	dialer := websocket.DefaultDialer
+
+	headers := http.Header{}
+	headers.Add("Authorization", "Bearer wrong-token")
+
+	_, resp, err := dialer.Dial(wsURL, headers)
+	if err == nil {
+		t.Fatal("expected connection to fail with wrong token")
+	}
+
+	if resp != nil {
+		if resp.StatusCode != http.StatusUnauthorized {
+			t.Errorf("expected status 401, got %d", resp.StatusCode)
+		}
+
+		_ = resp.Body.Close()
+	}
+}
+
+func TestHandlerTokenViaQueryParam(t *testing.T) {
+	t.Parallel()
+
+	store := wsserver.NewStore()
+
+	server := httptest.NewServer(wsserver.Handler(store, testToken))
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "?token=" + testToken
+
+	conn := dialWebSocket(t, wsURL, testToken)
+	defer conn.Close()
+
+	msg := wsserver.Message{
+		Type:     "ping",
+		ClientID: "test-client",
+	}
+
+	err := conn.WriteJSON(msg)
+	if err != nil {
+		t.Fatalf("failed to send message: %v", err)
+	}
+
+	var response wsserver.Message
+
+	err = conn.ReadJSON(&response)
+	if err != nil {
+		t.Fatalf("failed to read response: %v", err)
+	}
+
+	if response.Type != "pong" {
+		t.Errorf("expected type 'pong', got %s", response.Type)
+	}
+}
+
+func TestHandlerMalformedAuthHeader(t *testing.T) {
+	t.Parallel()
+
+	store := wsserver.NewStore()
+
+	server := httptest.NewServer(wsserver.Handler(store, testToken))
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
+
+	dialer := websocket.DefaultDialer
+
+	headers := http.Header{}
+	headers.Add("Authorization", testToken)
+
+	_, resp, err := dialer.Dial(wsURL, headers)
+	if err == nil {
+		t.Fatal("expected connection to fail with malformed auth header")
+	}
+
+	if resp != nil {
+		if resp.StatusCode != http.StatusUnauthorized {
+			t.Errorf("expected status 401, got %d", resp.StatusCode)
+		}
+
+		_ = resp.Body.Close()
 	}
 }
