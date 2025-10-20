@@ -178,11 +178,9 @@ install_rlgl() {
 
     log_info "Downloading from: ${download_url}"
 
-    # Create temporary directory
     temp_dir=$(mktemp -d)
     trap 'rm -rf "$temp_dir"' EXIT
 
-    # Download archive
     if command -v curl &> /dev/null; then
         if ! curl -sSL -f -o "${temp_dir}/${archive_name}" "$download_url"; then
             log_error "Failed to download rlgl. Check if version ${version} exists."
@@ -208,16 +206,18 @@ install_rlgl() {
     # Install binary
     mkdir -p "$INSTALL_DIR"
 
-    if [ -f "${temp_dir}/rlgl" ]; then
-        mv "${temp_dir}/rlgl" "${INSTALL_DIR}/rlgl"
+    local extracted_dir="${temp_dir}/rlgl-${version}-${platform}"
+    local binary_path="${extracted_dir}/rlgl-${version}"
+
+    if [ -f "$binary_path" ]; then
+        mv "$binary_path" "${INSTALL_DIR}/rlgl"
         chmod +x "${INSTALL_DIR}/rlgl"
         log_success "rlgl installed to ${INSTALL_DIR}/rlgl"
     else
-        log_error "Binary not found in archive"
+        log_error "Binary not found in archive (expected: ${binary_path})"
         exit 1
     fi
 
-    # Verify installation
     if "${INSTALL_DIR}/rlgl" serve --help &> /dev/null; then
         log_success "Installation verified"
     else
