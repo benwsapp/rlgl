@@ -56,7 +56,7 @@ type ProfileResponse struct {
 	Error string `json:"error,omitempty"`
 }
 
-func (c *Client) SetStatus(statusText, statusEmoji string) error {
+func (c *Client) SetStatus(statusText, statusEmoji string, expirationSeconds int) error {
 	if len(statusText) > maxStatusLength {
 		statusText = statusText[:maxStatusLength]
 	}
@@ -65,7 +65,7 @@ func (c *Client) SetStatus(statusText, statusEmoji string) error {
 		Profile: ProfileStatus{
 			StatusText:       statusText,
 			StatusEmoji:      statusEmoji,
-			StatusExpiration: 0,
+			StatusExpiration: expirationSeconds,
 		},
 	}
 
@@ -111,5 +111,5 @@ func (c *Client) SetStatus(statusText, statusEmoji string) error {
 }
 
 func (c *Client) ClearStatus() error {
-	return c.SetStatus("", "")
+	return c.SetStatus("", "", 0)
 }

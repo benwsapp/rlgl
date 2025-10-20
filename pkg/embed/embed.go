@@ -33,6 +33,7 @@ type SlackConfig struct {
 	UserToken           string `json:"user_token"            yaml:"user_token"`            //nolint:tagliatelle
 	StatusEmojiActive   string `json:"status_emoji_active"   yaml:"status_emoji_active"`   //nolint:tagliatelle
 	StatusEmojiInactive string `json:"status_emoji_inactive" yaml:"status_emoji_inactive"` //nolint:tagliatelle
+	TTLSeconds          int    `json:"ttl_seconds"           yaml:"ttl_seconds"`           //nolint:tagliatelle
 }
 
 type SiteConfig struct {
