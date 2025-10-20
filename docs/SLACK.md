@@ -72,7 +72,7 @@ Start your server and client as normal:
 ./rlgl serve
 
 # Terminal 2: Start client
-./rlgl client --client-id ben-macbook --config config/site.yaml
+./rlgl client --client-id ben-macbook --config config/rlgl.yaml
 ```
 
 Your Slack status will now automatically sync whenever the config changes!

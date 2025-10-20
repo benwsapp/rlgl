@@ -20,7 +20,7 @@ func InitConfig(cmd *cobra.Command) (string, error) {
 	if configFile != "" {
 		viper.SetConfigFile(configFile)
 	} else {
-		viper.SetConfigName("site")
+		viper.SetConfigName("rlgl")
 		viper.SetConfigType("yaml")
 		viper.AddConfigPath(".")
 		viper.AddConfigPath("config")
@@ -89,7 +89,7 @@ func init() {
 	clientCmd.Flags().String("client-id", "", "unique client identifier (required)")
 	clientCmd.Flags().Duration("interval", defaultInterval, "interval between config pushes")
 	clientCmd.Flags().Bool("once", false, "push config once and exit")
-	clientCmd.Flags().String("config", "", "path to site configuration file (defaults to site.yaml)")
+	clientCmd.Flags().String("config", "", "path to site configuration file (defaults to rlgl.yaml)")
 
 	_ = clientCmd.MarkFlagRequired("client-id")
 
