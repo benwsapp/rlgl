@@ -16,19 +16,44 @@ A lightweight status dashboard for developers to showcase their current work-in-
 
 ## Features
 
-- **Client/Server Architecture**: Run a central server and push updates from multiple clients
+- **Client/Server Architecture**: Server hosts web UI and Slack integration while client manages state
 - **WebSocket Authentication**: Secure WebSocket connections with token-based authentication
 - **WebSocket Communication**: Clients push config updates to the server via WebSocket
 - **Real-time Updates**: Server-Sent Events (SSE) stream config changes instantly to web viewers
 - **Simple Configuration**: Single YAML file to manage your work status
 - **Focus Indicator**: Show what you're currently working on
 - **Task Queue**: Display your upcoming tasks
-- **In-Memory Storage**: Server stores client configs in memory (no database required)
+- **In-Memory Storage**: Server stores client configs in memory (no persistent storage required)
 
-## Prerequisites
+## Getting Started
 
-- Go 1.25.1 or later
-- Docker (optional, for containerized deployment)
+### Quick Install (Recommended)
+
+```bash
+$ curl -sSL https://raw.githubusercontent.com/benwsapp/rlgl/main/install.sh | bash
+```
+
+This will install the latest version to `~/.local/bin` and add it to your PATH.
+
+**Install Options:**
+```bash
+# Install specific version
+$ curl -sSL https://raw.githubusercontent.com/benwsapp/rlgl/main/install.sh | bash -s -- --version v1.0.0
+
+# Install to custom directory
+$ curl -sSL https://raw.githubusercontent.com/benwsapp/rlgl/main/install.sh | bash -s -- --dir /usr/local/bin
+
+# Skip adding to PATH
+$ curl -sSL https://raw.githubusercontent.com/benwsapp/rlgl/main/install.sh | bash -s -- --no-path
+```
+
+### Docker
+
+```bash
+$ docker run -p 8080:8080 benwsapp/rlgl:latest serve
+```
+
+See [Docker documentation](#docker) below for more details.
 
 ## Configuration
 
@@ -37,7 +62,7 @@ Create a configuration file at `config/rlgl.yaml`:
 ```yaml
 name: "Ben's WIP Status"
 description: "Current work and availability"
-user: "bensapp"
+user: "Ben Sapp"
 contributor:
   active: true
   focus: "Implementing CSRF protection for rlgl"
@@ -164,16 +189,22 @@ $ ./rlgl client
 ### Environment Variables
 
 **Server:**
-- `RLGL_SERVER_ADDR` - Server address (default: `:8080`)
-- `RLGL_TOKEN` - WebSocket authentication token (auto-generated if not provided)
-- `RLGL_TRUSTED_ORIGINS` - Comma-separated list of trusted origins for CSRF protection
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RLGL_SERVER_ADDR` | Server address | `:8080` |
+| `RLGL_TOKEN` | WebSocket authentication token | Auto-generated if not provided |
+| `RLGL_TRUSTED_ORIGINS` | Comma-separated list of trusted origins for CSRF protection | None |
 
 **Client:**
-- `RLGL_REMOTE_HOST` - WebSocket server URL (default: `ws://localhost:8080/ws`)
-- `RLGL_CLIENT_ID` - Unique client identifier (required)
-- `RLGL_TOKEN` - WebSocket authentication token (required)
-- `RLGL_CLIENT_INTERVAL` - Interval between config pushes (default: `30s`)
-- `RLGL_CLIENT_ONCE` - Push config once and exit (default: `false`)
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `RLGL_REMOTE_HOST` | WebSocket server URL | `ws://localhost:8080/ws` | No |
+| `RLGL_CLIENT_ID` | Unique client identifier | None | Yes |
+| `RLGL_TOKEN` | WebSocket authentication token | None | Yes |
+| `RLGL_CLIENT_INTERVAL` | Interval between config pushes | `30s` | No |
+| `RLGL_CLIENT_ONCE` | Push config once and exit | `false` | No |
 
 ### Docker
 
@@ -257,25 +288,6 @@ $ go test ./...
 # Run tests with coverage
 $ go test -cover ./...
 ```
-
-## Security
-
-This project implements multiple layers of security:
-
-**Authentication:**
-- Token-based authentication for WebSocket connections
-- Tokens use format `rlgl_<base64url_encoded_random_bytes>`
-- Auto-generated tokens use 32 bytes of cryptographically secure randomness
-- Server generates token on first run if not pre-configured
-
-**CSRF Protection:**
-- Go 1.25's `http.CrossOriginProtection` middleware
-- Security headers (X-Content-Type-Options, X-Frame-Options, CSP, etc.)
-- SameSite cookies (Lax/Strict modes)
-
-**Container Security:**
-- Runs as non-root user (uid 65532) in Docker
-- Read-only filesystem in container
 
 ## License
 
