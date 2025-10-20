@@ -31,7 +31,7 @@ A lightweight status dashboard for developers to showcase their current work-in-
 
 ## Configuration
 
-Create a configuration file at `config/site.yaml`:
+Create a configuration file at `config/rlgl.yaml`:
 
 ```yaml
 name: "Ben's WIP Status"
@@ -54,7 +54,7 @@ The config file structure:
 - `contributor.focus`: What you're currently working on
 - `contributor.queue`: Your upcoming tasks/backlog
 
-Update the YAML file anytime to change your status - the web page will update automatically via SSE!
+Update the YAML file anytime to change your status - the client will push updates to the server automatically!
 
 ## Building from Source
 
@@ -70,9 +70,6 @@ $ go mod download
 
 # Build the binary
 $ go build -o rlgl .
-
-# Run with config file
-$ ./rlgl run --config config/site.yaml --addr :8080
 ```
 
 ### Docker Build
@@ -125,19 +122,19 @@ Run the client to push your local config to the server:
 
 ```bash
 # Push config continuously (every 30s by default)
-$ ./rlgl client --client-id my-laptop --config config/site.yaml --server ws://localhost:8080/ws
+$ ./rlgl client --client-id my-laptop --config config/rlgl.yaml --server ws://localhost:8080/ws
 
 # Push config once and exit
-$ ./rlgl client --client-id my-laptop --config config/site.yaml --server ws://localhost:8080/ws --once
+$ ./rlgl client --client-id my-laptop --config config/rlgl.yaml --server ws://localhost:8080/ws --once
 
 # Custom push interval
-$ ./rlgl client --client-id my-laptop --config config/site.yaml --server ws://localhost:8080/ws --interval 1m
+$ ./rlgl client --client-id my-laptop --config config/rlgl.yaml --server ws://localhost:8080/ws --interval 1m
 
-# Using environment variables
+# Using environment variables (defaults to rlgl.yaml in current directory)
 $ export RLGL_REMOTE_HOST="ws://localhost:8080/ws"
 $ export RLGL_CLIENT_ID="my-laptop"
 $ export RLGL_CLIENT_INTERVAL="1m"
-$ ./rlgl client --config config/site.yaml
+$ ./rlgl client
 ```
 
 ### Environment Variables
@@ -165,8 +162,8 @@ $ docker run -p 8080:8080 \
 
 ```bash
 $ docker run \
-    -v $(pwd)/config/site.yaml:/config/site.yaml:ro \
-    rlgl:latest client --client-id docker-client --config /config/site.yaml --server ws://host.docker.internal:8080/ws
+    -v $(pwd)/config/rlgl.yaml:/config/rlgl.yaml:ro \
+    rlgl:latest client --client-id docker-client --config /config/rlgl.yaml --server ws://host.docker.internal:8080/ws
 ```
 
 #### With Environment Variables
@@ -182,7 +179,7 @@ $ docker run \
     -v $(pwd)/config:/config:ro \
     -e RLGL_REMOTE_HOST="ws://host.docker.internal:8080/ws" \
     -e RLGL_CLIENT_ID="docker-client" \
-    rlgl:latest client --config /config/site.yaml
+    rlgl:latest client --config /config/rlgl.yaml
 ```
 
 ## Endpoints

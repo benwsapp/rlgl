@@ -355,3 +355,233 @@ func TestHandleMessagePush(t *testing.T) {
 		t.Errorf("expected ack, got %s", response.Type)
 	}
 }
+
+func TestStoreSetWithoutSlackConfig(t *testing.T) {
+	t.Parallel()
+
+	store := wsserver.NewStore()
+
+	config := embed.SiteConfig{
+		Name:        "Test",
+		Description: "Test config without Slack",
+		User:        "testuser",
+		Contributor: embed.Contributor{
+			Active: true,
+			Focus:  "Testing",
+			Queue:  []string{"task1"},
+		},
+	}
+
+	store.Set("test-client", config)
+
+	retrieved, ok := store.Get("test-client")
+	if !ok {
+		t.Fatal("expected to retrieve stored config")
+	}
+
+	if retrieved.Name != "Test" {
+		t.Errorf("expected name 'Test', got %s", retrieved.Name)
+	}
+
+	if retrieved.Slack.Enabled {
+		t.Error("expected Slack to be disabled by default")
+	}
+}
+
+func TestStoreSetWithSlackDisabled(t *testing.T) {
+	t.Parallel()
+
+	store := wsserver.NewStore()
+
+	config := embed.SiteConfig{
+		Name:        "Test",
+		Description: "Test config with Slack disabled",
+		User:        "testuser",
+		Contributor: embed.Contributor{
+			Active: true,
+			Focus:  "Testing",
+			Queue:  []string{"task1"},
+		},
+		Slack: embed.SlackConfig{
+			Enabled:   false,
+			UserToken: "xoxp-test",
+		},
+	}
+
+	store.Set("test-client", config)
+
+	retrieved, ok := store.Get("test-client")
+	if !ok {
+		t.Fatal("expected to retrieve stored config")
+	}
+
+	if retrieved.Slack.Enabled {
+		t.Error("expected Slack to remain disabled")
+	}
+}
+
+func TestStoreSetWithSlackEnabledInvalidToken(t *testing.T) {
+	t.Parallel()
+
+	store := wsserver.NewStore()
+
+	config := embed.SiteConfig{
+		Name:        "Test",
+		Description: "Test config with Slack enabled but invalid token",
+		User:        "testuser",
+		Contributor: embed.Contributor{
+			Active: true,
+			Focus:  "Testing feature",
+			Queue:  []string{"task1"},
+		},
+		Slack: embed.SlackConfig{
+			Enabled:             true,
+			UserToken:           "xoxp-invalid-token",
+			StatusEmojiActive:   ":large_green_circle:",
+			StatusEmojiInactive: ":red_circle:",
+		},
+	}
+
+	store.Set("test-client", config)
+
+	retrieved, ok := store.Get("test-client")
+	if !ok {
+		t.Fatal("expected to retrieve stored config")
+	}
+
+	if !retrieved.Slack.Enabled {
+		t.Error("expected Slack to be enabled")
+	}
+}
+
+func TestStoreSetWithSlackEnabledActiveTrue(t *testing.T) {
+	t.Parallel()
+
+	store := wsserver.NewStore()
+
+	config := embed.SiteConfig{
+		Name:        "Test",
+		Description: "Test with active status",
+		User:        "testuser",
+		Contributor: embed.Contributor{
+			Active: true,
+			Focus:  "Working on feature",
+			Queue:  []string{"task1"},
+		},
+		Slack: embed.SlackConfig{
+			Enabled:             true,
+			UserToken:           "xoxp-test-token",
+			StatusEmojiActive:   ":large_green_circle:",
+			StatusEmojiInactive: ":red_circle:",
+		},
+	}
+
+	store.Set("test-client", config)
+
+	retrieved, ok := store.Get("test-client")
+	if !ok {
+		t.Fatal("expected to retrieve stored config")
+	}
+
+	if !retrieved.Contributor.Active {
+		t.Error("expected active to be true")
+	}
+}
+
+func TestStoreSetWithSlackEnabledActiveFalse(t *testing.T) {
+	t.Parallel()
+
+	store := wsserver.NewStore()
+
+	config := embed.SiteConfig{
+		Name:        "Test",
+		Description: "Test with inactive status",
+		User:        "testuser",
+		Contributor: embed.Contributor{
+			Active: false,
+			Focus:  "In meeting",
+			Queue:  []string{"task1"},
+		},
+		Slack: embed.SlackConfig{
+			Enabled:             true,
+			UserToken:           "xoxp-test-token",
+			StatusEmojiActive:   ":large_green_circle:",
+			StatusEmojiInactive: ":red_circle:",
+		},
+	}
+
+	store.Set("test-client", config)
+
+	retrieved, ok := store.Get("test-client")
+	if !ok {
+		t.Fatal("expected to retrieve stored config")
+	}
+
+	if retrieved.Contributor.Active {
+		t.Error("expected active to be false")
+	}
+}
+
+func TestStoreSetWithSlackEnabledActiveFalseEmptyFocus(t *testing.T) {
+	t.Parallel()
+
+	store := wsserver.NewStore()
+
+	config := embed.SiteConfig{
+		Name:        "Test",
+		Description: "Test with inactive status and empty focus",
+		User:        "testuser",
+		Contributor: embed.Contributor{
+			Active: false,
+			Focus:  "",
+			Queue:  []string{"task1"},
+		},
+		Slack: embed.SlackConfig{
+			Enabled:   true,
+			UserToken: "xoxp-test-token",
+		},
+	}
+
+	store.Set("test-client", config)
+
+	retrieved, ok := store.Get("test-client")
+	if !ok {
+		t.Fatal("expected to retrieve stored config")
+	}
+
+	if retrieved.Contributor.Focus != "" {
+		t.Error("expected focus to be empty")
+	}
+}
+
+func TestStoreSetWithSlackEnabledDefaultEmojis(t *testing.T) {
+	t.Parallel()
+
+	store := wsserver.NewStore()
+
+	config := embed.SiteConfig{
+		Name:        "Test",
+		Description: "Test with default emojis",
+		User:        "testuser",
+		Contributor: embed.Contributor{
+			Active: true,
+			Focus:  "Working",
+			Queue:  []string{"task1"},
+		},
+		Slack: embed.SlackConfig{
+			Enabled:   true,
+			UserToken: "xoxp-test-token",
+		},
+	}
+
+	store.Set("test-client", config)
+
+	retrieved, ok := store.Get("test-client")
+	if !ok {
+		t.Fatal("expected to retrieve stored config")
+	}
+
+	if retrieved.Slack.StatusEmojiActive != "" {
+		t.Errorf("expected empty active emoji, got %s", retrieved.Slack.StatusEmojiActive)
+	}
+}

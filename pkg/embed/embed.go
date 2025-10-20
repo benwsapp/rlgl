@@ -28,11 +28,19 @@ type Contributor struct {
 	Queue  []string `json:"queue"  yaml:"queue"`
 }
 
+type SlackConfig struct {
+	Enabled             bool   `json:"enabled"               yaml:"enabled"`
+	UserToken           string `json:"user_token"            yaml:"user_token"`            //nolint:tagliatelle
+	StatusEmojiActive   string `json:"status_emoji_active"   yaml:"status_emoji_active"`   //nolint:tagliatelle
+	StatusEmojiInactive string `json:"status_emoji_inactive" yaml:"status_emoji_inactive"` //nolint:tagliatelle
+}
+
 type SiteConfig struct {
 	Name        string      `json:"name"        yaml:"name"`
 	Description string      `json:"description" yaml:"description"`
 	User        string      `json:"user"        yaml:"user"`
 	Contributor Contributor `json:"contributor" yaml:"contributor"`
+	Slack       SlackConfig `json:"slack"       yaml:"slack"`
 }
 
 // GetTemplate returns the compiled index template, using sync.Once for caching.
