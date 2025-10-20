@@ -355,3 +355,67 @@ func TestHandleMessagePush(t *testing.T) {
 		t.Errorf("expected ack, got %s", response.Type)
 	}
 }
+
+func TestStoreSetWithoutSlackConfig(t *testing.T) {
+	t.Parallel()
+
+	store := wsserver.NewStore()
+
+	config := embed.SiteConfig{
+		Name:        "Test",
+		Description: "Test config without Slack",
+		User:        "testuser",
+		Contributor: embed.Contributor{
+			Active: true,
+			Focus:  "Testing",
+			Queue:  []string{"task1"},
+		},
+	}
+
+	store.Set("test-client", config)
+
+	retrieved, ok := store.Get("test-client")
+	if !ok {
+		t.Fatal("expected to retrieve stored config")
+	}
+
+	if retrieved.Name != "Test" {
+		t.Errorf("expected name 'Test', got %s", retrieved.Name)
+	}
+
+	if retrieved.Slack.Enabled {
+		t.Error("expected Slack to be disabled by default")
+	}
+}
+
+func TestStoreSetWithSlackDisabled(t *testing.T) {
+	t.Parallel()
+
+	store := wsserver.NewStore()
+
+	config := embed.SiteConfig{
+		Name:        "Test",
+		Description: "Test config with Slack disabled",
+		User:        "testuser",
+		Contributor: embed.Contributor{
+			Active: true,
+			Focus:  "Testing",
+			Queue:  []string{"task1"},
+		},
+		Slack: embed.SlackConfig{
+			Enabled:   false,
+			UserToken: "xoxp-test",
+		},
+	}
+
+	store.Set("test-client", config)
+
+	retrieved, ok := store.Get("test-client")
+	if !ok {
+		t.Fatal("expected to retrieve stored config")
+	}
+
+	if retrieved.Slack.Enabled {
+		t.Error("expected Slack to remain disabled")
+	}
+}
