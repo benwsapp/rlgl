@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/benwsapp/rlgl/pkg/auth"
 	"github.com/benwsapp/rlgl/pkg/embed"
 	"github.com/benwsapp/rlgl/pkg/wsserver"
 )
@@ -120,11 +121,27 @@ func SendEventData(responseWriter http.ResponseWriter, flusher http.Flusher, con
 	return nil
 }
 
-func Run(addr string, store *wsserver.Store, trustedOrigins []string) error {
+func Run(addr string, store *wsserver.Store, trustedOrigins []string, token string) error {
+	var authToken string
+
+	if token == "" {
+		generatedToken, err := generateToken()
+		if err != nil {
+			return fmt.Errorf("failed to generate token: %w", err)
+		}
+
+		authToken = generatedToken
+		slog.Info("WebSocket authentication token (save this!)", "token", authToken)
+	} else {
+		authToken = token
+
+		slog.Info("using pre-configured authentication token")
+	}
+
 	mux := http.NewServeMux()
 
-	// WebSocket endpoints for client push
-	mux.HandleFunc("/ws", wsserver.Handler(store))
+	// WebSocket endpoints for client push (requires authentication)
+	mux.HandleFunc("/ws", wsserver.Handler(store, authToken))
 
 	// Status endpoint showing all stored configs
 	mux.HandleFunc("/status", wsserver.StatusHandler(store))
@@ -162,6 +179,15 @@ func Run(addr string, store *wsserver.Store, trustedOrigins []string) error {
 	}
 
 	return nil
+}
+
+func generateToken() (string, error) {
+	token, err := auth.GenerateToken()
+	if err != nil {
+		return "", fmt.Errorf("auth token generation failed: %w", err)
+	}
+
+	return token, nil
 }
 
 func IndexHandlerWithStore(store *wsserver.Store) http.HandlerFunc {

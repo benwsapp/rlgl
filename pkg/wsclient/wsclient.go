@@ -35,13 +35,15 @@ type Message struct {
 type Client struct {
 	serverURL string
 	clientID  string
+	authToken string
 	conn      *websocket.Conn
 }
 
-func NewClient(serverURL, clientID string) *Client {
+func NewClient(serverURL, clientID, authToken string) *Client {
 	return &Client{
 		serverURL: serverURL,
 		clientID:  clientID,
+		authToken: authToken,
 	}
 }
 
@@ -52,7 +54,12 @@ func (c *Client) Connect() error {
 		HandshakeTimeout: handshakeTimeout,
 	}
 
-	conn, resp, err := dialer.Dial(c.serverURL, nil)
+	headers := http.Header{}
+	if c.authToken != "" {
+		headers.Add("Authorization", "Bearer "+c.authToken)
+	}
+
+	conn, resp, err := dialer.Dial(c.serverURL, headers)
 	if err != nil {
 		return fmt.Errorf("failed to connect: %w", err)
 	}
@@ -145,8 +152,8 @@ func (c *Client) Ping() error {
 	return nil
 }
 
-func Run(serverURL, configPath, clientID string, interval time.Duration) error {
-	client := NewClient(serverURL, clientID)
+func Run(serverURL, configPath, clientID, authToken string, interval time.Duration) error {
+	client := NewClient(serverURL, clientID, authToken)
 
 	err := client.Connect()
 	if err != nil {
@@ -190,8 +197,8 @@ func Run(serverURL, configPath, clientID string, interval time.Duration) error {
 	return nil
 }
 
-func RunOnce(serverURL, configPath, clientID string) error {
-	client := NewClient(serverURL, clientID)
+func RunOnce(serverURL, configPath, clientID, authToken string) error {
+	client := NewClient(serverURL, clientID, authToken)
 
 	err := client.Connect()
 	if err != nil {

@@ -117,9 +117,13 @@ type Message struct {
 	Error    string            `json:"error,omitempty"`
 }
 
-func Handler(store *Store) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		conn, err := upgrader.Upgrade(w, req, nil)
+func Handler(store *Store, authToken string) http.HandlerFunc {
+	return func(writer http.ResponseWriter, req *http.Request) {
+		if !validateToken(writer, req, authToken) {
+			return
+		}
+
+		conn, err := upgrader.Upgrade(writer, req, nil)
 		if err != nil {
 			slog.Error("failed to upgrade connection", "error", err)
 
@@ -131,6 +135,40 @@ func Handler(store *Store) http.HandlerFunc {
 
 		handleConnection(conn, store)
 	}
+}
+
+func validateToken(writer http.ResponseWriter, req *http.Request, authToken string) bool {
+	providedToken := getAuthToken(req)
+
+	const bearerPrefix = "Bearer "
+	if len(providedToken) < len(bearerPrefix) || providedToken[:len(bearerPrefix)] != bearerPrefix {
+		slog.Warn("websocket connection rejected: missing or invalid authorization header", "remote_addr", req.RemoteAddr)
+		http.Error(writer, "Unauthorized", http.StatusUnauthorized)
+
+		return false
+	}
+
+	token := providedToken[len(bearerPrefix):]
+	if token != authToken {
+		slog.Warn("websocket connection rejected: invalid token", "remote_addr", req.RemoteAddr)
+		http.Error(writer, "Unauthorized", http.StatusUnauthorized)
+
+		return false
+	}
+
+	return true
+}
+
+func getAuthToken(req *http.Request) string {
+	providedToken := req.Header.Get("Authorization")
+	if providedToken == "" {
+		providedToken = req.URL.Query().Get("token")
+		if providedToken != "" {
+			providedToken = "Bearer " + providedToken
+		}
+	}
+
+	return providedToken
 }
 
 func handleConnection(conn *websocket.Conn, store *Store) {
@@ -221,9 +259,9 @@ func GetStore() *Store {
 	return NewStore()
 }
 
-func Run(addr string, store *Store, _ []string) error {
+func Run(addr string, store *Store, _ []string, authToken string) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/ws", Handler(store))
+	mux.HandleFunc("/ws", Handler(store, authToken))
 	mux.HandleFunc("/status", StatusHandler(store))
 
 	const (

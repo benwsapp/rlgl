@@ -17,6 +17,7 @@ A lightweight status dashboard for developers to showcase their current work-in-
 ## Features
 
 - **Client/Server Architecture**: Run a central server and push updates from multiple clients
+- **WebSocket Authentication**: Secure WebSocket connections with token-based authentication
 - **WebSocket Communication**: Clients push config updates to the server via WebSocket
 - **Real-time Updates**: Server-Sent Events (SSE) stream config changes instantly to web viewers
 - **Simple Configuration**: Single YAML file to manage your work status
@@ -102,19 +103,26 @@ Run the server to host the dashboard and receive updates from clients:
 
 ```bash
 # Run server with defaults (listens on :8080)
+# Authentication token will be auto-generated and displayed
 $ ./rlgl serve
 
 # Specify custom address
 $ ./rlgl serve --addr :3000
+
+# With pre-configured authentication token
+$ ./rlgl serve --token rlgl_your_secret_token_here
 
 # With trusted origins for CSRF (comma-separated)
 $ ./rlgl serve --trusted-origins https://example.com,https://app.example.com
 
 # Using environment variables
 $ export RLGL_SERVER_ADDR=":3000"
+$ export RLGL_TOKEN="rlgl_your_secret_token_here"
 $ export RLGL_TRUSTED_ORIGINS="https://example.com,https://app.example.com"
 $ ./rlgl serve
 ```
+
+**Authentication:** The server requires a token for WebSocket connections. If you don't provide one via `--token` or `RLGL_TOKEN`, the server will generate a secure random token and display it on startup. **Save this token** - you'll need it for client connections!
 
 ### Client Mode
 
@@ -122,17 +130,33 @@ Run the client to push your local config to the server:
 
 ```bash
 # Push config continuously (every 30s by default)
-$ ./rlgl client --client-id my-laptop --config config/rlgl.yaml --server ws://localhost:8080/ws
+# Replace TOKEN with the value from server startup
+$ ./rlgl client \
+    --client-id my-laptop \
+    --config config/rlgl.yaml \
+    --server ws://localhost:8080/ws \
+    --token rlgl_your_token_here
 
 # Push config once and exit
-$ ./rlgl client --client-id my-laptop --config config/rlgl.yaml --server ws://localhost:8080/ws --once
+$ ./rlgl client \
+    --client-id my-laptop \
+    --config config/rlgl.yaml \
+    --server ws://localhost:8080/ws \
+    --token rlgl_your_token_here \
+    --once
 
 # Custom push interval
-$ ./rlgl client --client-id my-laptop --config config/rlgl.yaml --server ws://localhost:8080/ws --interval 1m
+$ ./rlgl client \
+    --client-id my-laptop \
+    --config config/rlgl.yaml \
+    --server ws://localhost:8080/ws \
+    --token rlgl_your_token_here \
+    --interval 1m
 
 # Using environment variables (defaults to rlgl.yaml in current directory)
 $ export RLGL_REMOTE_HOST="ws://localhost:8080/ws"
 $ export RLGL_CLIENT_ID="my-laptop"
+$ export RLGL_TOKEN="rlgl_your_token_here"
 $ export RLGL_CLIENT_INTERVAL="1m"
 $ ./rlgl client
 ```
@@ -141,11 +165,13 @@ $ ./rlgl client
 
 **Server:**
 - `RLGL_SERVER_ADDR` - Server address (default: `:8080`)
+- `RLGL_TOKEN` - WebSocket authentication token (auto-generated if not provided)
 - `RLGL_TRUSTED_ORIGINS` - Comma-separated list of trusted origins for CSRF protection
 
 **Client:**
 - `RLGL_REMOTE_HOST` - WebSocket server URL (default: `ws://localhost:8080/ws`)
 - `RLGL_CLIENT_ID` - Unique client identifier (required)
+- `RLGL_TOKEN` - WebSocket authentication token (required)
 - `RLGL_CLIENT_INTERVAL` - Interval between config pushes (default: `30s`)
 - `RLGL_CLIENT_ONCE` - Push config once and exit (default: `false`)
 
@@ -154,7 +180,13 @@ $ ./rlgl client
 #### Run Server
 
 ```bash
+# Server will generate and display authentication token on startup
 $ docker run -p 8080:8080 \
+    rlgl:latest serve --addr :8080
+
+# Or use pre-configured token
+$ docker run -p 8080:8080 \
+    -e RLGL_TOKEN="rlgl_your_token_here" \
     rlgl:latest serve --addr :8080
 ```
 
@@ -163,7 +195,11 @@ $ docker run -p 8080:8080 \
 ```bash
 $ docker run \
     -v $(pwd)/config/rlgl.yaml:/config/rlgl.yaml:ro \
-    rlgl:latest client --client-id docker-client --config /config/rlgl.yaml --server ws://host.docker.internal:8080/ws
+    rlgl:latest client \
+        --client-id docker-client \
+        --config /config/rlgl.yaml \
+        --server ws://host.docker.internal:8080/ws \
+        --token rlgl_your_token_here
 ```
 
 #### With Environment Variables
@@ -171,6 +207,7 @@ $ docker run \
 ```bash
 # Server
 $ docker run -p 8080:8080 \
+    -e RLGL_TOKEN="rlgl_your_token_here" \
     -e RLGL_TRUSTED_ORIGINS="https://example.com,https://app.example.com" \
     rlgl:latest serve
 
@@ -179,6 +216,7 @@ $ docker run \
     -v $(pwd)/config:/config:ro \
     -e RLGL_REMOTE_HOST="ws://host.docker.internal:8080/ws" \
     -e RLGL_CLIENT_ID="docker-client" \
+    -e RLGL_TOKEN="rlgl_your_token_here" \
     rlgl:latest client --config /config/rlgl.yaml
 ```
 
@@ -190,7 +228,9 @@ $ docker run \
 - `GET /events` - Server-Sent Events stream for real-time config updates
 
 **WebSocket API:**
-- `WS /ws` - WebSocket endpoint for client connections (push config, ping/pong)
+- `WS /ws` - WebSocket endpoint for client connections (requires authentication via `Authorization: Bearer <token>` header)
+  - Supports push config and ping/pong messages
+  - Backward compatible: also accepts token via `?token=<token>` query parameter
 - `GET /status` - JSON endpoint returning all client configs (keyed by client ID)
 
 ## Development
@@ -220,10 +260,20 @@ $ go test -cover ./...
 
 ## Security
 
-This project implements defense-in-depth CSRF protection:
+This project implements multiple layers of security:
+
+**Authentication:**
+- Token-based authentication for WebSocket connections
+- Tokens use format `rlgl_<base64url_encoded_random_bytes>`
+- Auto-generated tokens use 32 bytes of cryptographically secure randomness
+- Server generates token on first run if not pre-configured
+
+**CSRF Protection:**
 - Go 1.25's `http.CrossOriginProtection` middleware
 - Security headers (X-Content-Type-Options, X-Frame-Options, CSP, etc.)
 - SameSite cookies (Lax/Strict modes)
+
+**Container Security:**
 - Runs as non-root user (uid 65532) in Docker
 - Read-only filesystem in container
 
