@@ -61,6 +61,7 @@ slack:
   user_token: "xoxp-1234567890-1234567890-1234567890-abcdef1234567890abcdef1234567890"
   status_emoji_active: ":large_green_circle:"
   status_emoji_inactive: ":red_circle:"
+  ttl_seconds: 3600
 ```
 
 ### 6. Run rlgl
@@ -85,6 +86,7 @@ Your Slack status will now automatically sync whenever the config changes!
 | `user_token` | Your Slack user token (starts with `xoxp-`) | `""` |
 | `status_emoji_active` | Emoji when `active: true` | `:large_green_circle:` |
 | `status_emoji_inactive` | Emoji when `active: false` | `:red_circle:` |
+| `ttl_seconds` | Seconds until status expires (refreshed on each sync) | `3600` (1 hour) |
 
 ## Architecture
 
@@ -93,6 +95,7 @@ Your Slack status will now automatically sync whenever the config changes!
 3. **If Slack is enabled**, server automatically calls Slack API to update your status:
    - Status text: Your `contributor.focus` field
    - Status emoji: Based on `contributor.active` (true/false)
+   - Status expiration: Configurable TTL (default: 1 hour, refreshed on each sync)
 4. **Your Slack status updates** in real-time
 
 ## Status Mapping
@@ -116,4 +119,34 @@ rlgl uses the Slack Web API `users.profile.set` method:
 - Documentation: https://api.slack.com/methods/users.profile.set
 - Requires user token with `users.profile:write` scope
 - Status text limited to 100 characters (automatically truncated)
+- Status expiration is configurable via `ttl_seconds` (default: 3600 = 1 hour)
 - Works on free Slack workspaces
+
+## Examples
+
+### Set status to expire in 30 minutes
+
+```yaml
+slack:
+  enabled: true
+  user_token: "xoxp-..."
+  ttl_seconds: 1800
+```
+
+### Set status to expire in 4 hours
+
+```yaml
+slack:
+  enabled: true
+  user_token: "xoxp-..."
+  ttl_seconds: 14400
+```
+
+### Disable expiration (status stays until manually cleared)
+
+```yaml
+slack:
+  enabled: true
+  user_token: "xoxp-..."
+  ttl_seconds: 0
+```

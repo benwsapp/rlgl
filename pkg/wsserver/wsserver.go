@@ -76,7 +76,14 @@ func syncToSlack(config embed.SiteConfig) {
 		}
 	}
 
-	err := client.SetStatus(statusText, statusEmoji)
+	ttl := config.Slack.TTLSeconds
+	if ttl == 0 {
+		ttl = 3600
+	}
+
+	expirationSeconds := int(time.Now().Add(time.Duration(ttl) * time.Second).Unix())
+
+	err := client.SetStatus(statusText, statusEmoji, expirationSeconds)
 	if err != nil {
 		slog.Error("failed to sync status to Slack", "error", err, "user", config.User)
 	} else {

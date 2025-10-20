@@ -18,7 +18,7 @@ func TestSetStatusSuccess(t *testing.T) {
 
 	client := slack.NewClient("test-token").WithAPIURL(server.URL)
 
-	err := client.SetStatus("Working on feature", ":computer:")
+	err := client.SetStatus("Working on feature", ":computer:", 0)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -35,7 +35,7 @@ func TestSetStatusSlackAPIError(t *testing.T) {
 
 	client := slack.NewClient("test-token").WithAPIURL(server.URL)
 
-	err := client.SetStatus("Test status", ":test:")
+	err := client.SetStatus("Test status", ":test:", 0)
 	if err == nil {
 		t.Error("expected error but got none")
 	}
@@ -53,7 +53,7 @@ func TestSetStatusEmptyStatus(t *testing.T) {
 
 	client := slack.NewClient("test-token").WithAPIURL(server.URL)
 
-	err := client.SetStatus("", "")
+	err := client.SetStatus("", "", 0)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -89,7 +89,7 @@ func TestSetStatusLongTextTruncation(t *testing.T) {
 
 	client := slack.NewClient("test-token").WithAPIURL(server.URL)
 
-	err := client.SetStatus(longStatusText, ":long:")
+	err := client.SetStatus(longStatusText, ":long:", 0)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
