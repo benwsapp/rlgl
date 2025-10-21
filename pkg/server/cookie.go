@@ -31,8 +31,8 @@ func SetSecureCookie(responseWriter http.ResponseWriter, opts SecureCookieOption
 		Value:    opts.Value,
 		Path:     opts.Path,
 		MaxAge:   opts.MaxAge,
-		HttpOnly: opts.HTTPOnly,
-		Secure:   opts.Secure,
+		HttpOnly: true,
+		Secure:   true,
 		SameSite: opts.SameSite,
 	}
 
