@@ -12,7 +12,7 @@ A lightweight status dashboard for developers to showcase their current work-in-
 [![Go Report Card](https://goreportcard.com/badge/github.com/benwsapp/rlgl)](https://goreportcard.com/report/github.com/benwsapp/rlgl)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
 [![Test Status](https://github.com/benwsapp/rlgl/actions/workflows/ci.yml/badge.svg)](https://github.com/benwsapp/rlgl/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/benwsapp/rlgl/graph/badge.svg?token=XDXHMQEK2L)](https://codecov.io/gh/benwsapp/rlgl)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/35f11d9745244b6ea9b4f7656bd0ed74)](https://app.codacy.com/gh/benwsapp/rlgl/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 ## Features
 
