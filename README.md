@@ -13,6 +13,9 @@ A lightweight status dashboard for developers to showcase their current work-in-
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
 [![Test Status](https://github.com/benwsapp/rlgl/actions/workflows/ci.yml/badge.svg)](https://github.com/benwsapp/rlgl/actions/workflows/ci.yml)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/35f11d9745244b6ea9b4f7656bd0ed74)](https://app.codacy.com/gh/benwsapp/rlgl/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/35f11d9745244b6ea9b4f7656bd0ed74)](https://app.codacy.com/gh/benwsapp/rlgl/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
+[![golangci-lint](https://img.shields.io/badge/linted%20by-golangci--lint-brightgreen)](https://golangci-lint.run/)
+[![GitHub tag](https://img.shields.io/github/v/tag/benwsapp/rlgl?color=blue)](https://github.com/benwsapp/rlgl/releases/latest)
 
 ## Features
 
