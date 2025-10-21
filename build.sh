@@ -6,7 +6,7 @@ VERSION=${1:-$(git describe --tags --always --dirty 2>/dev/null || echo "dev")}
 COMMIT_SHA=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
 BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-CLEAN_VERSION=$(echo "$VERSION" | sed 's/-dirty$//')
+CLEAN_VERSION=${VERSION%-dirty}
 
 mkdir -p dist
 
