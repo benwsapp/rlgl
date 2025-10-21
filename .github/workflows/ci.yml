@@ -30,12 +30,26 @@ jobs:
           go-version-file: "go.mod"
       - name: Run unit tests with coverage
         run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7
+      - name: Convert coverage to Cobertura format
+        run: |
+          go install github.com/boumenot/gocover-cobertura@latest
+          gocover-cobertura < coverage.txt > coverage.xml
+      - name: Upload coverage to Codacy
+        uses: codacy/codacy-coverage-reporter-action@a38818475bb21847788496e9f0fddaa4e84955ba
         with:
-          files: ./coverage.txt
-          fail_ci_if_error: false
-          use_oidc: true
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: coverage.xml
+
+  codacy-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - name: Run Codacy Analysis
+        uses: codacy/codacy-analysis-cli-action@d28ce580f19309cd493628eba4641f745822082c
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          upload: true
+          max-allowed-issues: 2147483647
 
   lint-go:
     runs-on: ubuntu-latest
