@@ -1,0 +1,21 @@
+name: Conventional Commits
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  conventional-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          fetch-depth: 0
+
+      - name: Validate commits
+        run: |
+          git log --format=%s origin/${{ github.base_ref }}..${{ github.sha }} | \
+          grep -v '^Merge ' | \
+          grep -vE '^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?(!)?: .+' && \
+          echo "❌ Found commits not following conventional commit format" && exit 1 || \
+          echo "✅ All commits follow conventional commit format"
