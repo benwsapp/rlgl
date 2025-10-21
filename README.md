@@ -1,12 +1,6 @@
 # Red Light/Green Light
 
-![rlgl](https://github.com/benwsapp/rlgl/blob/main/img/screenshot.png)
-
-A lightweight status dashboard for developers to showcase their current work-in-progress. Display what you're focusing on, your task queue, and availability status in real-time. Perfect for solo developers, remote teams, or anyone who wants a simple way to broadcast "what I'm working on right now."
-
-**rlgl** runs in two modes:
-- **Server Mode**: Hosts the dashboard web interface and receives status updates via WebSocket
-- **Client Mode**: Reads your local YAML config and pushes updates to the server
+A lightweight dashboard for developers to display their current work-in-progress.
 
 [![Go](https://img.shields.io/badge/go-1.25-00ADD8.svg?logo=go)](https://tip.golang.org/doc/go1.25)
 [![Go Report Card](https://goreportcard.com/badge/github.com/benwsapp/rlgl)](https://goreportcard.com/report/github.com/benwsapp/rlgl)
@@ -16,6 +10,13 @@ A lightweight status dashboard for developers to showcase their current work-in-
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/35f11d9745244b6ea9b4f7656bd0ed74)](https://app.codacy.com/gh/benwsapp/rlgl/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 [![golangci-lint](https://img.shields.io/badge/linted%20by-golangci--lint-brightgreen)](https://golangci-lint.run/)
 [![GitHub tag](https://img.shields.io/github/v/tag/benwsapp/rlgl?color=blue)](https://github.com/benwsapp/rlgl/releases/latest)
+
+
+![rlgl](https://github.com/benwsapp/rlgl/blob/main/img/screenshot.png)
+
+**rlgl** runs in two modes:
+- **Server Mode**: Hosts the dashboard web interface and receives status updates via WebSocket
+- **Client Mode**: Reads your local YAML config and pushes updates to the server
 
 ## Features
 
