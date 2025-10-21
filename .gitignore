@@ -2,11 +2,11 @@
 *
 
 # Allow config
+!.codacy.yml
 !/.gitignore
 !/.github/**
 !.golangci.yml
 !cliff.toml
-!codecov.yml
 !Dockerfile
 !build.sh
 !install.sh
